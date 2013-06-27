@@ -1,5 +1,6 @@
 description = 'Spring XD performance test'
 
+apply plugin: 'base'
 buildscript {
         repositories {
                 maven { url "http://repo.springsource.org/plugins-snapshot" }
@@ -74,12 +75,12 @@ task buildRedisPerfTests(dependsOn: [":spring-xd-perftest-redistransport:build",
 
 task copyConfigs(type: Copy) {
 	from "$rootDir/config"
-        into "$buildDir/dist/spring-xd-perf/config"
+        into "$buildDir/dist/spring-xd-perftest/config"
 }
 
 task copyPerfInstall(type: Copy, dependsOn: ["buildRedisPerfTests", "copyConfigs"]) {
         from "$rootDir/spring-xd-perftest-redistransport/build/install/spring-xd-perftest-redistransport"
-        into "$buildDir/dist/spring-xd-perf"
+        into "$buildDir/dist/spring-xd-perftest"
 }
 
 task cleanDist(type: Delete) {
@@ -91,7 +92,7 @@ task dist (type: Copy, dependsOn: ["cleanDist", "copyPerfInstall"]) {
         description = "Copy all the required installs"
         from "$rootDir/scripts/README"
         from "$rootDir/scripts/LICENSE"
-        into "$buildDir/dist/spring-xd-perf"
+        into "$buildDir/dist/spring-xd-perftest"
 }
 
 configurations {
@@ -99,9 +100,10 @@ configurations {
 }
 
 task zipPerf (type: Zip, dependsOn: "dist"){
+        println "$baseName-$appendix-$version-$classifier.$extension"
         description = "Bundles Spring XD into dist/"
-        from file("$buildDir/dist/spring-xd-perf").absolutePath
-        into "spring-xd-perf"
+        from file("$buildDir/dist/spring-xd-perftest").absolutePath
+        into "spring-xd-perftest"
         destinationDir file("$buildDir/dist")
 }
 
