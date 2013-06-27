@@ -1,0 +1,110 @@
+description = 'Spring XD performance test'
+
+buildscript {
+        repositories {
+                maven { url "http://repo.springsource.org/plugins-snapshot" }
+        }
+}
+
+allprojects {
+        group = 'org.springframework.xd'
+
+        repositories {
+                maven { url 'http://repo.springsource.org/libs-milestone' }
+                maven { url 'http://repo.springsource.org/libs-snapshot' }
+        }
+}
+
+subprojects { subproject ->
+
+        apply plugin: 'java'
+        apply plugin: 'maven'
+        apply plugin: 'eclipse'
+        apply plugin: 'idea'
+
+        sourceCompatibility=1.6
+        targetCompatibility=1.6
+
+        ext {
+                args4jVersion = '2.0.16'
+                jacksonVersion = '1.9.12'
+                springIntegrationVersion = '3.0.0.M2'
+                springDataRedisVersion = '1.1.0.BUILD-SNAPSHOT'
+                lettuceVersion = '2.3.2'
+        }
+        eclipse {
+                project {
+                        natures += 'org.springframework.ide.eclipse.core.springnature'
+                }
+        }
+ 
+        sourceSets {
+                test {
+                        resources {
+                                srcDirs = ['src/test/resources', 'src/test/java']
+                        }
+                }
+         } 
+}
+
+project('spring-xd-perftest-redistransport') {
+        description = 'Redis as message bus'
+        dependencies {
+                compile "args4j:args4j:$args4jVersion"
+                compile "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
+                compile "org.springframework.integration:spring-integration-core:$springIntegrationVersion"
+                compile "org.springframework.integration:spring-integration-syslog:$springIntegrationVersion"
+                compile "org.springframework.data:spring-data-redis:$springDataRedisVersion" 
+                compile "commons-pool:commons-pool:1.5.6"
+                compile "com.lambdaworks:lettuce:$lettuceVersion"
+        }
+        apply plugin:'application'
+        startScripts.setEnabled(false)
+        task scriptFiles {
+                def scripts = file("$rootDir/scripts/perf-test")
+                outputs.dir scripts
+        }
+        applicationDistribution.from(scriptFiles) {
+                into "bin"
+        } 
+}
+
+task buildRedisPerfTests(dependsOn: [":spring-xd-perftest-redistransport:build", ":spring-xd-perftest-redistransport:installApp"]) {
+}
+
+task copyConfigs(type: Copy) {
+	from "$rootDir/config"
+        into "$buildDir/dist/spring-xd-perf/config"
+}
+
+task copyPerfInstall(type: Copy, dependsOn: ["buildRedisPerfTests", "copyConfigs"]) {
+        from "$rootDir/spring-xd-perftest-redistransport/build/install/spring-xd-perftest-redistransport"
+        into "$buildDir/dist/spring-xd-perf"
+}
+
+task cleanDist(type: Delete) {
+        description = "cleans $rootDir/dist directory"
+        delete "$buildDir/dist"
+}
+
+task dist (type: Copy, dependsOn: ["cleanDist", "copyPerfInstall"]) {
+        description = "Copy all the required installs"
+        from "$rootDir/scripts/README"
+        from "$rootDir/scripts/LICENSE"
+        into "$buildDir/dist/spring-xd-perf"
+}
+
+configurations {
+        distPerf
+}
+
+task zipPerf (type: Zip, dependsOn: "dist"){
+        description = "Bundles Spring XD into dist/"
+        from file("$buildDir/dist/spring-xd-perf").absolutePath
+        into "spring-xd-perf"
+        destinationDir file("$buildDir/dist")
+}
+
+artifacts {
+        distPerf zipPerf
+}

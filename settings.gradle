@@ -1,0 +1,4 @@
+rootProject.name = 'spring-xd-performance-test'
+
+include 'spring-xd-perftest-redistransport'
+include 'spring-xd-perftest-loadgen'
