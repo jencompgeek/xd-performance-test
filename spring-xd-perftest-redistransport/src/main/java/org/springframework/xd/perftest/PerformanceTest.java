@@ -31,7 +31,7 @@ public class PerformanceTest {
 	private static ConsumerType consumerType;
 	
 	public static void main(String[] args) {
-		setPerfTestHome();
+		updatePerfTestHome();
 		PerformanceTest perfTest = new PerformanceTest();
 		CmdLineOptions options = perfTest.new CmdLineOptions();
 		CmdLineParser parser = new CmdLineParser(options);
@@ -45,6 +45,7 @@ public class PerformanceTest {
 		}
 		transport = options.getTransport();
 		consumerType = options.getConsumerType();
+		setConnectionFactoryType(options.getConnectionFactoryType());
 		if (options.isShowHelp()) {
 			parser.printUsage(System.err);
 			System.exit(0);
@@ -60,8 +61,14 @@ public class PerformanceTest {
 
 	}
 	
-	private static void setPerfTestHome() {
+	private static void updatePerfTestHome() {
 		System.setProperty("perftest.home", System.getProperty("perftest.home", ".."));
+	}
+	
+	private static void setConnectionFactoryType(ConnectionFactoryType connectionFactoryType) {
+		System.setProperty("redis.connectionFactory", 
+				(connectionFactoryType.name().equals("noPool") ? "default" : "pool"));
+		System.getProperty("redis.connectionFactory");
 	}
 	
 	// Transport Enum 
@@ -74,6 +81,12 @@ public class PerformanceTest {
 		concurrent,
 		scheduler
 	}
+	
+	//ConnectionFactory type
+	private enum ConnectionFactoryType {
+		noPool,
+		pool
+	}
 
 	private class CmdLineOptions {
 				
@@ -83,8 +96,11 @@ public class PerformanceTest {
 		@Option(name = "--transport", usage = "The transport to be used (default: redis)")
 		private Transport transport = Transport.redis;
 
-		@Option(name = "--consumerType", usage = "Consumer type")
+		@Option(name = "--consumer", usage = "Consumer type (default: concurrent)")
 		private ConsumerType consumerType = ConsumerType.concurrent;
+		
+		@Option(name = "--connectionFactory", usage = "ConnectionFactory type (default: noPool)")
+		private ConnectionFactoryType connectionFactoryType = ConnectionFactoryType.noPool;
 		
 		/**
 		 * @return transport
@@ -98,6 +114,13 @@ public class PerformanceTest {
 		 */
 		public ConsumerType getConsumerType() {
 			return consumerType;
+		}
+		
+		/**
+		 * @return connectionFactoryType
+		 */
+		public ConnectionFactoryType getConnectionFactoryType() {
+			return connectionFactoryType;
 		}
 		
 		/**

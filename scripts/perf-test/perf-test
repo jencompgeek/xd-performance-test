@@ -159,17 +159,5 @@ if $cygwin ; then
         (9) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" "$args8" ;;
     esac
 fi
-# check if XD_HOME is already set; if it is not, then set APP_HOME as XD_HOME
-if [ x"$XD_HOME" = x ] ; then
-    XD_HOME=$APP_HOME
-fi
-# set XD_HOME as system property via SPRING_XD_CONTAINER_OPTS
 
-# Split up the JVM_OPTS And SPRING_XD_CONTAINER_OPTS values into an array, following the shell quoting and substitution rules
-function splitJvmOpts() {
-    JVM_OPTS=("$@")
-}
-eval splitJvmOpts $DEFAULT_JVM_OPTS $JAVA_OPTS $SPRING_XD_CONTAINER_OPTS
-
-
-exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"
+exec "$JAVACMD" "-Dperftest.home=$APP_HOME" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"
