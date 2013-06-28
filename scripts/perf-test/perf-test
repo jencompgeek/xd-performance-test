@@ -160,4 +160,4 @@ if $cygwin ; then
     esac
 fi
 
-exec "$JAVACMD" "-Dperftest.home=$APP_HOME" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"
+exec "$JAVACMD" "-Dperftest.home=$APP_HOME" "-Dlog4j.configuration=file:///$APP_HOME/config/perftest-logger.properties" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"

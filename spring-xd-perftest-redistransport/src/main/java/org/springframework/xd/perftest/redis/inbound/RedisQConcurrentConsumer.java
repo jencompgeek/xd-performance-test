@@ -15,6 +15,8 @@
  */
 package org.springframework.xd.perftest.redis.inbound;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -23,6 +25,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *
  */
 public class RedisQConcurrentConsumer extends RedisQInboundChannelAdapter {
+	
+	private static final Log logger = LogFactory.getLog(RedisQConcurrentConsumer.class);
 	
 	private volatile int numListenerThreads = 1;
 	
@@ -43,6 +47,7 @@ public class RedisQConcurrentConsumer extends RedisQInboundChannelAdapter {
 		this.taskExecutor.setMaxPoolSize(numListenerThreads);
 		this.taskExecutor.setBeanName("Redis-Performance-Test");
 		this.taskExecutor.initialize();
+		logger.info("Initializing redisQInboundChannelAdapter task executor with " + numListenerThreads + " threads.");
 	}
 	
 	@Override
@@ -51,6 +56,8 @@ public class RedisQConcurrentConsumer extends RedisQInboundChannelAdapter {
 		for (int i = 0; i < this.taskExecutor.getCorePoolSize(); i++) {
 			this.taskExecutor.execute(new RedisQInboundChannelAdapter.ListenerTask());
 		}
+		logger.info("Starting redisQInboundChannelAdapter with "+ 
+				(isBlockingRightPop() ? "Blocking rpop Connections" : "Non-blocking rpop connections"));
 	}
 
 }

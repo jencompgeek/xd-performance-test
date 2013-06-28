@@ -77,22 +77,14 @@ if exist "%APP_HOME_LIB%" (
     set CLASSPATH=!CLASSPATH!;%APP_HOME_LIB%\*
 )
 
-@rem Set XD_HOME to APP_HOME if XD_HOME is not defined yet
-if not exist "%XD_HOME%" (
-    set XD_HOME=%APP_HOME%
-)
-
-@rem Execute xd-container
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %SPRING_XD_CONTAINER_OPTS%  -classpath "%CLASSPATH%" org.springframework.xd.perftest.PerformanceTest %CMD_LINE_ARGS%
+@rem Execute xd-perftest
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% "-Dperftest.home=%APP_HOME%" "-Dlog4j.configuration=file:///%APP_HOME%/config/perftest-logger.properties" -classpath "%CLASSPATH%" org.springframework.xd.perftest.PerformanceTest %CMD_LINE_ARGS%
 
 :end
 @rem End local scope for the variables with windows NT shell
 if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail
-rem Set variable SPRING_XD_CONTAINER_EXIT_CONSOLE if you need the _script_ return code instead of
-rem the _cmd.exe /c_ return code!
-if  not "" == "%SPRING_XD_CONTAINER_EXIT_CONSOLE%" exit 1
 exit /b 1
 
 :mainEnd

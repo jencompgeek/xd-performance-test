@@ -15,6 +15,8 @@
  */
 package org.springframework.xd.perftest;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -25,6 +27,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  */
 public class PerformanceTest {
+	
+	private static final Log logger = LogFactory.getLog(PerformanceTest.class);
 	
 	private static Transport transport;
 	
@@ -50,9 +54,11 @@ public class PerformanceTest {
 			parser.printUsage(System.err);
 			System.exit(0);
 		}
-		System.out.println("**************************************************");
-		System.out.println("Using "+ transport +" transport with "+ consumerType + " consumer" );
-		System.out.println("**************************************************");
+		logger.info("*******Starting Performance test********");
+		logger.info("Transport: "+ transport);
+		logger.info("Consumer:  "+ consumerType);
+		logger.info("ConnectionFactory: "+options.getConnectionFactoryType());
+		logger.info("****************************************");
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
 		context.getEnvironment().setActiveProfiles(consumerType.name());
 		context.setConfigLocation("META-INF/perftest/"+ transport +"-transport-perftest.xml");

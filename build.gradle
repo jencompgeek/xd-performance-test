@@ -27,6 +27,8 @@ subprojects { subproject ->
         targetCompatibility=1.6
 
         ext {
+                slf4jVersion = '1.7.5'
+                log4jVersion = '1.2.17'
                 args4jVersion = '2.0.16'
                 jacksonVersion = '1.9.12'
                 springIntegrationVersion = '3.0.0.M2'
@@ -58,6 +60,8 @@ project('spring-xd-perftest-redistransport') {
                 compile "org.springframework.data:spring-data-redis:$springDataRedisVersion" 
                 compile "commons-pool:commons-pool:1.5.6"
                 compile "com.lambdaworks:lettuce:$lettuceVersion"
+                 runtime "org.slf4j:jcl-over-slf4j:$slf4jVersion",
+                         "org.slf4j:slf4j-log4j12:$slf4jVersion"
         }
         apply plugin:'application'
         startScripts.setEnabled(false)
@@ -100,7 +104,6 @@ configurations {
 }
 
 task zipPerf (type: Zip, dependsOn: "dist"){
-        println "$baseName-$appendix-$version-$classifier.$extension"
         description = "Bundles Spring XD into dist/"
         from file("$buildDir/dist/spring-xd-perftest").absolutePath
         into "spring-xd-perftest"

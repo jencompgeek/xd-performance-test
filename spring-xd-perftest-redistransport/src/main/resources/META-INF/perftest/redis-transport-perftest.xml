@@ -39,6 +39,7 @@
 			<property name="extractPayload" value="true" />
 			<property name="numListenerThreads" value="${num.listener.threads:1}" />
 			<property name="blockingRightPop" value="${is.brpop:false}" />
+			<property name="listenerSleepTime" value="${listener.sleep.time:10}" />
 		</bean>
 	</beans>
 	
@@ -49,6 +50,7 @@
 			<property name="outputChannel" ref="nullChannel" />
 			<property name="extractPayload" value="true" />
 			<property name="blockingRightPop" value="${is.brpop:false}" />
+			<property name="listenerSleepTime" value="${listener.sleep.time:10}" />
 		</bean>
 	</beans>
 </beans>

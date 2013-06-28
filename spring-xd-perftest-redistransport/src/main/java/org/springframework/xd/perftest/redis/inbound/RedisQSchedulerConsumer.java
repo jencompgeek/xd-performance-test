@@ -19,6 +19,8 @@ package org.springframework.xd.perftest.redis.inbound;
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -28,6 +30,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
  * @author Ilayaperumal Gopinathan
  */
 public class RedisQSchedulerConsumer extends RedisQInboundChannelAdapter {
+	
+	private static final Log logger = LogFactory.getLog(RedisQSchedulerConsumer.class);
 
 	private volatile TaskScheduler taskScheduler;
 	
@@ -47,6 +51,7 @@ public class RedisQSchedulerConsumer extends RedisQInboundChannelAdapter {
 			tpts.afterPropertiesSet();
 			this.taskScheduler = tpts;
 		}
+		logger.info("Initialize RedisQInboundChannelAdapter with taskScheduler");
 	}
 	
 	@Override

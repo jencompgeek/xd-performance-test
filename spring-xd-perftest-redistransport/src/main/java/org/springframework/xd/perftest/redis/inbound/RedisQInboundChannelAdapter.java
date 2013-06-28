@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -38,6 +40,8 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  */
 public class RedisQInboundChannelAdapter extends MessageProducerSupport {
+	
+	private static final Log logger = LogFactory.getLog(RedisQInboundChannelAdapter.class);
 
 	private final String queueName;
 
@@ -48,6 +52,8 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	
 	protected volatile Boolean blockingRightPop = false;
+	
+	private volatile long listenerSleepTime = 10;
 	
 	private AtomicBoolean receivingFirstMsg = new AtomicBoolean(false);
 	
@@ -71,6 +77,10 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 	
 	public void setBlockingRightPop(boolean blockingRightPop) {
 		this.blockingRightPop = blockingRightPop;
+	}
+	
+	public void setListenerSleepTime(long listenerSleepTime) {
+		this.listenerSleepTime = listenerSleepTime;
 	}
 	
 	public boolean isBlockingRightPop(){
@@ -131,12 +141,14 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 							logger.error("Error sending message", e);
 						}
 					}
-
+					Thread.sleep(listenerSleepTime);
 				}
 			} catch (RedisSystemException e) {
 				if(isRunning()) {
 					logger.error("Error polling Redis queue", e);
 				}
+			} catch (InterruptedException e) {
+				logger.error(e);
 			}
 		}
 	}
