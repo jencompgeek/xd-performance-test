@@ -12,24 +12,9 @@
     
     <context:property-placeholder location="file:${perftest.home}/config/redis-transport-perftest.properties" />
     
-    <!--  Syslog inbound -->
-    
-    <int-syslog:inbound-channel-adapter id="adapter" channel="toRedis" protocol="${syslog.protocol:tcp}" port="${syslog.port:11111}"/>
-    
-	
-    <int:channel id="toRedis" />
-    
-    <bean id="handler" class="org.springframework.xd.perftest.redis.outbound.RedisQOutboundMessageHandler">
-		<constructor-arg value="${redis.queue.name:redis-transport-perf}" />
-		<constructor-arg ref="redisConnectionFactory" />
-	</bean>
-	
-    <bean id="eventDrivenConsumer" class="org.springframework.integration.endpoint.EventDrivenConsumer">
-        <constructor-arg ref="toRedis" />
-		<constructor-arg ref="handler" />
-    </bean>
-    
     <import resource="redis-${redis.connectionFactory}-connectionfactory.xml"/>
+    
+    <int:channel id="test" />
     
     <beans profile="default,concurrent">
    		<bean id="redisQInboundAdapter" class="org.springframework.xd.perftest.redis.inbound.RedisQConcurrentConsumer">
@@ -53,4 +38,5 @@
 			<property name="listenerSleepTime" value="${listener.sleep.time:10}" />
 		</bean>
 	</beans>
+
 </beans>

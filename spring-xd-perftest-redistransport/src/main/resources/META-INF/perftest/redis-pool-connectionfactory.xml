@@ -12,13 +12,11 @@
     
 	<bean id="redisConnectionFactory"
 			class="org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory">
-			<constructor-arg index="0" value="${redis.hostname:localhost}" />
-			<constructor-arg index="1" value="${redis.port:6379}" />
 			<constructor-arg>
-				<bean class="org.springframework.data.redis.connection.lettuce.LettucePool">
+				<bean class="org.springframework.data.redis.connection.lettuce.DefaultLettucePool">
 					<constructor-arg index="0" value="${redis.hostname:localhost}" />
 					<constructor-arg index="1" value="${redis.port:6379}" />
-					<constructor-arg>
+					<constructor-arg index="2">
 						<bean class="org.springframework.data.redis.connection.PoolConfig"
 							p:maxActive="${redis.pool.maxActive:8}"
 							p:maxIdle="${redis.pool.maxIdle:8}"
@@ -37,5 +35,4 @@
 			</constructor-arg>
 			<property name="shareNativeConnection" value="${redis.shareNativeConnection:true}"></property>
 		</bean>
-
 </beans>

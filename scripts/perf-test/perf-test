@@ -6,7 +6,7 @@
 ##
 ##############################################################################
 
-# Add default JVM options here. You can also use JAVA_OPTS and SPRING_XD_CONTAINER_OPTS to pass JVM options to this script.
+# Add default JVM options here. You can also use JAVA_OPTS and PERFTEST_OPTS to pass JVM options to this script.
 DEFAULT_JVM_OPTS=""
 
 APP_NAME="xd-container"
@@ -159,5 +159,18 @@ if $cygwin ; then
         (9) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" "$args8" ;;
     esac
 fi
+# check if PERFTEST_HOME is already set; if it is not, then set APP_HOME as PERFTEST_HOME
+if [ x"$PERFTEST_HOME" = x ] ; then
+    PERFTEST_HOME=$APP_HOME
+fi
+# set PERFTEST_HOME as system property via PERFTEST_OPTS
+PERFTEST_OPTS="-Dperftest.home=$APP_HOME -Dlog4j.configuration=file:///$APP_HOME/config/perftest-logger.properties"
 
-exec "$JAVACMD" "-Dperftest.home=$APP_HOME" "-Dlog4j.configuration=file:///$APP_HOME/config/perftest-logger.properties" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"
+# Split up the JVM_OPTS And PERFTEST_OPTS values into an array, following the shell quoting and substitution rules
+function splitJvmOpts() {
+    JVM_OPTS=("$@")
+}
+
+eval splitJvmOpts $DEFAULT_JVM_OPTS $JAVA_OPTS $PERFTEST_OPTS
+
+exec "$JAVACMD" "${JVM_OPTS[@]}" -classpath "$CLASSPATH" org.springframework.xd.perftest.PerformanceTest "$@"

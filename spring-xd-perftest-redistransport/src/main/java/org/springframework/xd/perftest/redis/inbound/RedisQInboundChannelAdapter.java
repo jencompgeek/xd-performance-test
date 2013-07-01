@@ -141,15 +141,15 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 							logger.error("Error sending message", e);
 						}
 					}
-					Thread.sleep(listenerSleepTime);
+					//Thread.sleep(listenerSleepTime);
 				}
 			} catch (RedisSystemException e) {
 				if(isRunning()) {
 					logger.error("Error polling Redis queue", e);
 				}
-			} catch (InterruptedException e) {
+			} /*catch (InterruptedException e) {
 				logger.error(e);
-			}
+			}*/
 		}
 	}
 

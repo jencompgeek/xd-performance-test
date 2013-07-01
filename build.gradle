@@ -33,7 +33,7 @@ subprojects { subproject ->
                 jacksonVersion = '1.9.12'
                 springIntegrationVersion = '3.0.0.M2'
                 springDataRedisVersion = '1.1.0.BUILD-SNAPSHOT'
-                lettuceVersion = '2.3.2'
+                lettuceVersion = '2.3.3'
         }
         eclipse {
                 project {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-syslog="http://www.springframework.org/schema/integration/syslog"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/syslog http://www.springframework.org/schema/integration/syslog/spring-integration-syslog.xsd">
+		
+    
+    <context:property-placeholder location="file:${perftest.home}/config/redis-transport-perftest.properties" />
+
+    <!--  Syslog inbound -->
+
+    <int-syslog:inbound-channel-adapter id="adapter" channel="toRedis" protocol="${syslog.protocol:tcp}" port="${syslog.port:11111}"/>
+    
+	
+    <int:channel id="toRedis" />
+    
+    <import resource="redis-${redis.connectionFactory}-connectionfactory.xml"/>
+    
+    <bean id="handler" class="org.springframework.xd.perftest.redis.outbound.RedisQOutboundMessageHandler">
+		<constructor-arg value="${redis.queue.name:redis-transport-perf}" />
+		<constructor-arg ref="redisConnectionFactory" />
+	</bean>
+	
+    <bean id="eventDrivenConsumer" class="org.springframework.integration.endpoint.EventDrivenConsumer">
+        <constructor-arg ref="toRedis" />
+		<constructor-arg ref="handler" />
+    </bean>
+
+</beans>

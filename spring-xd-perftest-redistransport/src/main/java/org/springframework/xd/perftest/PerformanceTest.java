@@ -34,6 +34,8 @@ public class PerformanceTest {
 	
 	private static ConsumerType consumerType;
 	
+	private static Flow flow;
+	
 	public static void main(String[] args) {
 		updatePerfTestHome();
 		PerformanceTest perfTest = new PerformanceTest();
@@ -49,6 +51,7 @@ public class PerformanceTest {
 		}
 		transport = options.getTransport();
 		consumerType = options.getConsumerType();
+		flow = options.getFlow();
 		setConnectionFactoryType(options.getConnectionFactoryType());
 		if (options.isShowHelp()) {
 			parser.printUsage(System.err);
@@ -56,12 +59,15 @@ public class PerformanceTest {
 		}
 		logger.info("*******Starting Performance test********");
 		logger.info("Transport: "+ transport);
-		logger.info("Consumer:  "+ consumerType);
+		if (flow.equals(Flow.inbound)){
+			logger.info("Consumer:  "+ consumerType);
+		}
 		logger.info("ConnectionFactory: "+options.getConnectionFactoryType());
 		logger.info("****************************************");
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
 		context.getEnvironment().setActiveProfiles(consumerType.name());
-		context.setConfigLocation("META-INF/perftest/"+ transport +"-transport-perftest.xml");
+		context.setConfigLocation("META-INF/perftest/"+ transport +"-perftest-"+ 
+									options.getFlow() +".xml");
 		context.refresh();
 		context.registerShutdownHook();
 
@@ -77,6 +83,12 @@ public class PerformanceTest {
 		System.getProperty("redis.connectionFactory");
 	}
 	
+	// Flow Enum 
+	private enum Flow {
+		inbound,
+		outbound
+	}
+		
 	// Transport Enum 
 	private enum Transport {
 		redis
@@ -108,6 +120,9 @@ public class PerformanceTest {
 		@Option(name = "--connectionFactory", usage = "ConnectionFactory type (default: noPool)")
 		private ConnectionFactoryType connectionFactoryType = ConnectionFactoryType.noPool;
 		
+		@Option(name = "--flow", usage = "Flow (default: outbound)")
+		private Flow flow = Flow.outbound;
+		
 		/**
 		 * @return transport
 		 */
@@ -127,6 +142,13 @@ public class PerformanceTest {
 		 */
 		public ConnectionFactoryType getConnectionFactoryType() {
 			return connectionFactoryType;
+		}
+		
+		/**
+		 * @return flow
+		 */
+		public Flow getFlow() {
+			return flow;
 		}
 		
 		/**
