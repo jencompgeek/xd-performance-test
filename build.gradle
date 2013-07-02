@@ -32,7 +32,7 @@ subprojects { subproject ->
                 args4jVersion = '2.0.16'
                 jacksonVersion = '1.9.12'
                 springIntegrationVersion = '3.0.0.M2'
-                springDataRedisVersion = '1.1.0.BUILD-SNAPSHOT'
+                springDataRedisVersion = '1.1.0.M1'
                 lettuceVersion = '2.3.3'
         }
         eclipse {
@@ -40,14 +40,14 @@ subprojects { subproject ->
                         natures += 'org.springframework.ide.eclipse.core.springnature'
                 }
         }
- 
+
         sourceSets {
                 test {
                         resources {
                                 srcDirs = ['src/test/resources', 'src/test/java']
                         }
                 }
-         } 
+         }
 }
 
 project('spring-xd-perftest-redistransport') {
@@ -57,7 +57,7 @@ project('spring-xd-perftest-redistransport') {
                 compile "org.codehaus.jackson:jackson-mapper-asl:$jacksonVersion"
                 compile "org.springframework.integration:spring-integration-core:$springIntegrationVersion"
                 compile "org.springframework.integration:spring-integration-syslog:$springIntegrationVersion"
-                compile "org.springframework.data:spring-data-redis:$springDataRedisVersion" 
+                compile "org.springframework.data:spring-data-redis:$springDataRedisVersion"
                 compile "commons-pool:commons-pool:1.5.6"
                 compile "com.lambdaworks:lettuce:$lettuceVersion"
                  runtime "org.slf4j:jcl-over-slf4j:$slf4jVersion",
@@ -71,7 +71,7 @@ project('spring-xd-perftest-redistransport') {
         }
         applicationDistribution.from(scriptFiles) {
                 into "bin"
-        } 
+        }
 }
 
 task buildRedisPerfTests(dependsOn: [":spring-xd-perftest-redistransport:build", ":spring-xd-perftest-redistransport:installApp"]) {
