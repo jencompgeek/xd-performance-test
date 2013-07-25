@@ -17,13 +17,19 @@
 package org.springframework.xd.perftest.redis.outbound;
 
 import java.util.Date;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.codehaus.jackson.map.ObjectMapper;
-
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.StringRedisConnection;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.integration.Message;
 import org.springframework.integration.handler.AbstractMessageHandler;
@@ -47,6 +53,12 @@ public class RedisQOutboundChannelAdapter extends AbstractMessageHandler {
 	
 	private Timer timer = new Timer();
 
+	private Queue<String> messages = new ConcurrentLinkedQueue<String>();
+
+	private static final int BATCH_SIZE=500;
+
+	private AtomicInteger batchCounter = new AtomicInteger();
+
 
 	public RedisQOutboundChannelAdapter(String queueName, RedisConnectionFactory connectionFactory) {
 		Assert.hasText(queueName, "queueName is required");
@@ -68,7 +80,31 @@ public class RedisQOutboundChannelAdapter extends AbstractMessageHandler {
 		if (logger.isDebugEnabled()) {
 			logger.debug("sending to redis queue '" + this.queueName + "': " + s);
 		}
-		this.redisTemplate.boundListOps(this.queueName).leftPush(s);
+		batchSend(s);
+	}
+
+	private void batchSend(String s) {
+		//TODO assuming OK to lose Exceptions, we need to catch and log. Also, we need a time gate to ensure we
+		//are picking up messages if less than batch size
+		batchCounter.incrementAndGet();
+		messages.offer(s);
+		if(batchCounter.get() == BATCH_SIZE) {
+			batchCounter.set(0);
+			redisTemplate.execute(new RedisCallback<Object>() {
+				@Override
+				public Object doInRedis(RedisConnection connection) throws DataAccessException {
+					for(int i=0;i<BATCH_SIZE;i++) {
+						((StringRedisConnection)connection).lPush(queueName, messages.remove());
+						msgCounter.incrementAndGet();
+					}
+					return null;
+				}
+			}, false, true);
+		}
+	}
+
+	private void send(String s) {
+		redisTemplate.boundListOps(queueName).leftPush(s);
 		msgCounter.incrementAndGet();
 	}
 	

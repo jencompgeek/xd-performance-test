@@ -16,7 +16,9 @@
 
 package org.springframework.xd.perftest.redis.inbound;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,8 +29,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.StringRedisConnection;
+import org.springframework.data.redis.core.BoundListOperations;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisOperations;
+import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.integration.Message;
 import org.springframework.integration.endpoint.MessageProducerSupport;
@@ -55,6 +64,8 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 	
 	private volatile long listenerSleepTime = 10;
 	
+	private static final long BATCH_SIZE = 50;
+
 	private AtomicBoolean receivingFirstMsg = new AtomicBoolean(false);
 	
 	private AtomicLong msgCounter = new AtomicLong(0L);
@@ -120,9 +131,8 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 		public void run() {
 			try {
 				while (isRunning()) {
-					String next = (isBlockingRightPop() ? redisTemplate.boundListOps(queueName).rightPop(5, TimeUnit.SECONDS)
-							: redisTemplate.boundListOps(queueName).rightPop());
-					if (next != null) {
+					List<String> msgs = pipelined();
+					for(String next: msgs) {
 						if (receivingFirstMsg.compareAndSet(false, true)) {
 							System.out.println("Started receiving messages at: "+ new Date());
 						}
@@ -153,6 +163,120 @@ public class RedisQInboundChannelAdapter extends MessageProducerSupport {
 		}
 	}
 
+	private List<String> noPipelineOrTx() {
+		List<String> values = new ArrayList<String>();
+		long listSize = executeEmptyList(values);
+		if(listSize > 0) {
+			for(int i=0; i< Math.min(listSize, BATCH_SIZE); i++) {
+				String val = redisTemplate.boundListOps(queueName).rightPop();
+				if(val != null) {
+					values.add(val);
+				}
+			}
+		}
+		return values;
+	}
+
+	private List<String> nonBatched() {
+		List<String> values = new ArrayList<String>();
+		String next = (isBlockingRightPop() ? redisTemplate.boundListOps(queueName).rightPop(5, TimeUnit.SECONDS)
+				: redisTemplate.boundListOps(queueName).rightPop());
+		if(next != null) {
+			values.add(next);
+		}
+		return values;
+	}
+
+	private List<String> tx() {
+		List<String> values = new ArrayList<String>();
+		final long listSize = executeEmptyList(values);
+		if(listSize > 0) {
+			return redisTemplate.execute(new SessionCallback<List<String>>() {
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				@Override
+				public List<String> execute(RedisOperations operations)
+						throws DataAccessException {
+					operations.multi();
+					List<String> values = new ArrayList<String>();
+					BoundListOperations<String,String> listOps = operations.boundListOps(queueName);
+					for(int i=0; i< Math.min(listSize, BATCH_SIZE); i++) {
+						listOps.rightPop();
+					}
+					List<Object> results = operations.exec();
+					for(Object result: results) {
+						if(result!=null) {
+							values.add((String)result);
+						}
+					}
+					return values;
+				}
+			});
+		}
+		return values;
+	}
+
+	private List<String> pipelined() {
+		List<String> values = new ArrayList<String>();
+		final long listSize = executeEmptyList(values);
+		if(listSize > 0) {
+			List<Object> results = redisTemplate.executePipelined(new RedisCallback<Object>() {
+				@Override
+				public Object doInRedis(RedisConnection connection)
+						throws DataAccessException {
+					StringRedisConnection stringRedisConn = (StringRedisConnection)connection;
+					for(int i=0; i< Math.min(listSize, BATCH_SIZE); i++) {
+						stringRedisConn.rPop(queueName);
+					}
+					return null;
+				}
+			});
+			for(Object result: results) {
+				if(result!=null) {
+					values.add((String)result);
+				}
+			}
+		}
+		return values;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private List<String> pipelinedTx() {
+		List<String> values = new ArrayList<String>();
+		final long listSize = executeEmptyList(values);
+		if(listSize > 0) {
+			List<Object> pipelinedResults = redisTemplate.executePipelined(new SessionCallback<List<String>>() {
+				@Override
+				public List<String> execute(RedisOperations operations)
+						throws DataAccessException {
+					operations.multi();
+					BoundListOperations<String,String> listOps = operations.boundListOps(queueName);
+					for(int i=0; i< Math.min(listSize, BATCH_SIZE); i++) {
+						listOps.rightPop();
+					}
+					operations.exec();
+					return null;
+				}
+			});
+			List<Object> results = (List<Object>) pipelinedResults.get(0);
+			for(Object result: results) {
+				if(result!=null) {
+					values.add((String)result);
+				}
+			}
+		}
+		return values;
+	}
+
+	private long executeEmptyList(List<String> values) {
+		final long listSize = redisTemplate.boundListOps(queueName).size();
+		if(listSize == 0) {
+			String value = redisTemplate.boundListOps(queueName).rightPop(5, TimeUnit.SECONDS);
+			if(value != null) {
+				values.add(value);
+			}
+		}
+		return listSize;
+	}
 
 	@SuppressWarnings("unused") // used by object mapper
 	private static class MessageDeserializationWrapper {
